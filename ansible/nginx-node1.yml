@@ -1,0 +1,15 @@
+- name: run nginx docker container on aws-test-node-1
+  become: yes
+  hosts:
+    - aws-test-node-1
+  tasks:
+    - docker_container:
+        name: nginx
+        image: nginx:latest
+        privileged: true
+        volume_driver: rexray/ebs
+        volumes:
+          - "nginx:/usr/share/nginx/html"
+        ports:
+          - "80:80"
+    - shell: docker exec nginx chmod 755 -R /usr/share/nginx/html

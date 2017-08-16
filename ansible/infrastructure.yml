@@ -1,0 +1,47 @@
+- name: Provision servers
+  become: yes
+  hosts:
+    - all
+  tasks:
+    - apt:
+        name: "{{ item }}"
+        update_cache: yes
+      with_items:
+        - python-pip
+
+    - command: docker
+      ignore_errors: yes
+      register: docker_exists
+
+    - get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: 0755
+      when: docker_exists|failed
+
+    - shell: /tmp/get-docker.sh
+      when: docker_exists | failed
+
+    - pip:
+        name: docker-py
+
+    - command: docker plugin inspect rexray/ebs
+      ignore_errors: yes
+      register: rexray_exists
+
+    - shell: |
+        echo "y\n" | \
+          docker plugin install rexray/ebs \
+            EBS_ACCESSKEY={{ ebs_access_key }} \
+            EBS_SECRETKEY={{ ebs_secret_key }} \
+            EBS_REGION={{ ebs_region }}
+      when: rexray_exists | failed
+
+- name: Upgrade system packages
+  become: yes
+  hosts:
+    - all
+  tasks:
+    - apt:
+        upgrade: yes
+        update_cache: yes
